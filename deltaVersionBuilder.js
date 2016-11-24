@@ -18,13 +18,29 @@
     this.methodologyModelDelta = payload.methodologyModelVersion;
     this.id = payload.methodologyModelVersionId;
     this.methodologyModel = payload.methodologyModel;
-
-    this.prepareMethodologyModelVersionBuilder();
+    this.methodologyModelId = payload.methodologyModelId;
   };
 
   Version.prototype.prepareMethodologyModelVersionBuilder = function() {
+    this.prepareMethodologyModelVersion();
+    this.prepareMethodologyModel();
+  };
+
+  Version.prototype.prepareMethodologyModelVersion = function() {
     if (this.id && !this.methodologyModelDelta) {
       this.setMethodologyModelDelta();
+    }
+  };
+
+  Version.prototype.prepareMethodologyModel = function() {
+    if (this.methodologyModelId && !this.methodologyModel) {
+      this.setMethodologyModel()
+        .then(function(methodologyModel) {
+          this.methodologyModel = methodologyModel;
+        }.bind(this))
+        .catch(function(error) {
+          console.log(error);
+        });
     }
   };
 
@@ -33,7 +49,6 @@
       this.loadMethodologyModelVersionBackboneFromId()
         .then(function(methodologyModelDelta) {
           this.methodologyModelDelta = methodologyModelDelta;
-          this.setPossibleMethodologyModel(this.methodologyModel.bb_methodology_model);
           fulfill();
         }.bind(this))
         .catch(function(error) {
@@ -43,26 +58,20 @@
     }.bind(this));
   };
 
-  Version.prototype.setPossibleMethodologyModel = function() {
-    if (!this.methodologyModel) {
-      this.setMethodologyModel();
-    }
-  };
-
-  Version.prototype.setMethodologyModel = function(methodologyModelRelationString) {
+  Version.prototype.setMethodologyModel = function() {
     return new Promise(function(fulfill, reject) {
-      dbInstance.get('gps.methodology_model', {
-        id: methodologyModelId,
+      dbInstance.get('gps.discipline?methodologyModelId=' + this.methodologyModelId + '&questionnaireLoad=true', {
+        data: {},
       })
-        .then(function(methodologyModel) {
-          this.methodologyModel = methodologyModel;
-          fulfill();
+        .then(function(serverResponse) {
+          var methodologyModel = serverResponse.data.data;
+          fulfill(methodologyModel.disciplines);
         })
         .catch(function(error) {
           console.log(error);
           reject();
         });
-    });
+    }.bind(this));
   };
 
   Version.prototype.loadMethodologyModelVersionBackboneFromId = function(methodologyModelVersionId) {
@@ -87,7 +96,15 @@
 
   var myVersion = new Version({
     methodologyModelVersionId: 'e8b082d1-e5c6-4bae-a1ce-fbb930baa271',
+    methodologyModelId: '0C4932BC-D9EE-FE76-FFCE-916E30D09C00',
   });
+
+  myVersion.prepareMethodologyModelVersionBuilder();
+    /*.then(function() {
+    })
+    .catch(function(error) {
+      console.log(error);
+    });*/
 
   setTimeout(function() {console.log(myVersion)}, 3000);
 
