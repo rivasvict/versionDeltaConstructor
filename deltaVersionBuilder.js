@@ -42,7 +42,9 @@ Version.prototype.prepareMethodologyModelVersion = function() {
         .catch(function() {
           reject(error);
         });
+      return;
     }
+    resolve();
   }.bind(this));
 };
 
@@ -57,7 +59,9 @@ Version.prototype.prepareMethodologyModel = function() {
         .catch(function(error) {
           reject(error);
         });
+      return;
     }
+    resolve();
   }.bind(this));
 };
 
@@ -141,7 +145,7 @@ var server = http.createServer(handleRequest);
 server.listen(PORT, function() {
   console.log('Server listening on: http://localhost:%s', PORT);
 });*/
-myVersion.prepareMethodologyModelVersionBuilder()
+/*myVersion.prepareMethodologyModelVersionBuilder()
   .then(function() {
     //console.log(myVersion.methodologyModelDelta.add.disciplines);
     var methodologyModelDeltaBuilderController = new MethodologyModelDeltaBuilderController();
@@ -150,5 +154,5 @@ myVersion.prepareMethodologyModelVersionBuilder()
   })
   .catch(function(error) {
     console.log(error);
-  });
+  });*/
 
