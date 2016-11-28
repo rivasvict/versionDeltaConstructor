@@ -1,5 +1,3 @@
-// Consider that methodologyModelVersionBackbone and methodologyModelBacbone have nothing to do with backbone framework
-// but the part of the body called backbone
 var axios = require('axios');
 var Promise = require('bluebird');
 var MethodologyModelDeltaBuilderController = require('./methodologyModelDeltaBuilderController');
@@ -22,7 +20,7 @@ function Version(payload) {
 
 Version.prototype.prepareMethodologyModelVersionBuilder = function() {
   return new Promise(function(resolve, reject) {
-    Promise.all([this.prepareMethodologyModelVersion(), this.prepareMethodologyModel(),])
+    Promise.all([this.setMethodologyModelDelta(), this.setMethodologyModel(),])
       .then(function() {
         resolve();
       })
@@ -32,78 +30,58 @@ Version.prototype.prepareMethodologyModelVersionBuilder = function() {
   }.bind(this));
 };
 
-Version.prototype.prepareMethodologyModelVersion = function() {
-  return new Promise(function(resolve, reject) {
+Version.prototype.setMethodologyModelDelta = function() {
+  return new Promise(function(fulfill, reject) {
     if (this.id && !this.methodologyModelDelta) {
-      this.setMethodologyModelDelta()
-        .then(function() {
-          resolve();
-        }.bind(this))
-        .catch(function() {
-          reject(error);
-        });
-      return;
-    }
-    resolve();
-  }.bind(this));
-};
 
-Version.prototype.prepareMethodologyModel = function() {
-  return new Promise(function(resolve, reject) {
-    if (this.methodologyModelId && !this.methodologyModel) {
-      this.setMethodologyModel()
-        .then(function(methodologyModel) {
-          this.methodologyModel = methodologyModel;
-          resolve(this.methodologyModel);
+      dbInstance.get('gps.methodology_model_version?id=' + this.id + '&loadDeltaData=true', {
+        data: {},
+      })
+        .then(function(serverResponse) {
+          var methodologyModelDelta = serverResponse.data.data;
+          this.methodologyModelDelta = methodologyModelDelta;
+          fulfill(this.methodologyModelDelta);
         }.bind(this))
         .catch(function(error) {
           reject(error);
         });
       return;
     }
-    resolve();
-  }.bind(this));
-};
-
-Version.prototype.setMethodologyModelDelta = function() {
-  return new Promise(function(fulfill, reject) {
-    this.loadMethodologyModelVersionBackboneFromId()
-      .then(function(methodologyModelDelta) {
-        this.methodologyModelDelta = methodologyModelDelta;
-        fulfill();
-      }.bind(this))
-      .catch(function(error) {
-        console.log(error);
-        reject();
-      });
+    fulfill(this.methodologyModelDelta);
   }.bind(this));
 };
 
 Version.prototype.setMethodologyModel = function() {
   return new Promise(function(fulfill, reject) {
-    dbInstance.get('gps.discipline?methodologyModelId=' + this.methodologyModelId + '&questionnaireLoad=true', {
-      data: {},
-    })
-      .then(function(serverResponse) {
-        var methodologyModel = serverResponse.data.data;
-        fulfill(methodologyModel.disciplines);
+    if (this.methodologyModelId && !this.methodologyModel) {
+      dbInstance.get('gps.discipline?methodologyModelId=' + this.methodologyModelId + '&questionnaireLoad=true', {
+        data: {},
       })
-      .catch(function(error) {
-        console.log(error);
-        reject();
-      });
+        .then(function(serverResponse) {
+          var methodologyModel = serverResponse.data.data;
+          this.methodologyModel = methodologyModel.disciplines;
+          fulfill(methodologyModel.disciplines);
+        }.bind(this))
+        .catch(function(error) {
+          console.log(error);
+          reject();
+        });
+      return;
+    }
+    fulfill(this.methodologyModel);
   }.bind(this));
 };
 
-Version.prototype.loadMethodologyModelVersionBackboneFromId = function(methodologyModelVersionId) {
+Version.prototype.loadMethodologyModelDeltaVersionFromId = function(methodologyModelVersionId) {
   methodologyModelVersionId = methodologyModelVersionId || this.id;
   return new Promise(function(fulfill, reject) {
     dbInstance.get('gps.methodology_model_version?id=' + methodologyModelVersionId + '&loadDeltaData=true', {
       data: {},
     })
       .then(function(serverResponse) {
-        var methodologyModelVersionBackbone = serverResponse.data.data;
-        fulfill(methodologyModelVersionBackbone);
+        var methodologyModelDeltaVersion = serverResponse.data.data;
+        //console.log(this);
+        fulfill(methodologyModelDeltaVersion);
       }.bind(this))
       .catch(function(error) {
         reject(error);
@@ -145,14 +123,13 @@ var server = http.createServer(handleRequest);
 server.listen(PORT, function() {
   console.log('Server listening on: http://localhost:%s', PORT);
 });*/
-/*myVersion.prepareMethodologyModelVersionBuilder()
+myVersion.prepareMethodologyModelVersionBuilder()
   .then(function() {
     //console.log(myVersion.methodologyModelDelta.add.disciplines);
     var methodologyModelDeltaBuilderController = new MethodologyModelDeltaBuilderController();
-    methodologyModelDeltaBuilderController
-        .buildMethodologyModelFromDeltaVersion(myVersion.methodologyModel, myVersion.methodologyModelDelta);
+    console.log(methodologyModelDeltaBuilderController
+        .buildMethodologyModelFromDeltaVersion(myVersion.methodologyModel, myVersion.methodologyModelDelta));
   })
   .catch(function(error) {
     console.log(error);
-  });*/
-
+  });
