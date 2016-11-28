@@ -119,7 +119,7 @@ var myVersion = new Version({
 
 //setTimeout(function() {console.log(myVersion)}, 3000);
 
-var http = require('http');
+/*var http = require('http');
 
 const PORT = 8080;
 
@@ -135,11 +135,21 @@ function handleRequest(request, response) {
       console.log(error);
     });
 
-  //response.end('It Works!! Path Hit: ' + request.url);
 };
 
 var server = http.createServer(handleRequest);
 
 server.listen(PORT, function() {
-  console.log("Server listening on: http://localhost:%s", PORT);
-});
+  console.log('Server listening on: http://localhost:%s', PORT);
+});*/
+myVersion.prepareMethodologyModelVersionBuilder()
+  .then(function() {
+    //console.log(myVersion.methodologyModelDelta.add.disciplines);
+    var methodologyModelDeltaBuilderController = new MethodologyModelDeltaBuilderController();
+    methodologyModelDeltaBuilderController
+        .buildMethodologyModelFromDeltaVersion(myVersion.methodologyModel, myVersion.methodologyModelDelta);
+  })
+  .catch(function(error) {
+    console.log(error);
+  });
+
