@@ -9,7 +9,6 @@
   "dependencies": {
     "axios": "^0.15.1",
     "bluebird": "^3.4.6",
-    "lodash": "4.16.4",
     "underscore": "^1.8.3"
   },
   "repository": {

@@ -1,6 +1,5 @@
 // Consider that methodologyModelVersionBackbone and methodologyModelBacbone have nothing to do with backbone framework
 // but the part of the body called backbone
-var _ = require('lodash');
 var axios = require('axios');
 var Promise = require('bluebird');
 var MethodologyModelDeltaBuilderController = require('./methodologyModelDeltaBuilderController');
