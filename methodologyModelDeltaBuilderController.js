@@ -56,7 +56,7 @@ MethodologyModelDeltaBuilderController.prototype.removeDisciplines = function() 
 MethodologyModelDeltaBuilderController.prototype.linearizePractices = function() {
   this.linearizedPractices = [];
   _.each(this.methodologyModel, function(discipline) {
-    _.extend(this.linearizedPractices, discipline.practices);/*this.linearizedPractices.push(discipline.practices);*/
+    _.extend(this.linearizedPractices, discipline.practices);
   }.bind(this));
 };
 
@@ -65,6 +65,12 @@ MethodologyModelDeltaBuilderController.prototype.linearizeQuestions = function()
   _.each(this.linearizedPractices, function(practice) {
     this.linearizedQuestions.push(practice.questions);
   }.bind(this));
+};
+
+MethodologyModelDeltaBuilderController.prototype.addElementsThatWereAdded = function() {
+  this.addDisciplines();
+  this.addPractices();
+  this.addQuestions();
 };
 
 MethodologyModelDeltaBuilderController.prototype.addDisciplines = function() {
@@ -95,12 +101,6 @@ MethodologyModelDeltaBuilderController.prototype.addQuestions = function() {
       }
     }.bind(this));
   }.bind(this));
-};
-
-MethodologyModelDeltaBuilderController.prototype.addElementsThatWereAdded = function() {
-  this.addDisciplines();
-  this.addPractices();
-  this.addQuestions();
 };
 
 module.exports = MethodologyModelDeltaBuilderController;
