@@ -7,9 +7,6 @@ MethodologyModelDeltaBuilderController.prototype.buildMethodologyModelFromDeltaV
   this.delta = delta;
   this.removeElementsThatWereRemoved();
   this.addElementsThatWereAdded();
-  //console.log(_.last(this.methodologyModel).practices);
-  //console.log(_.first(_.first(this.methodologyModel).practices).questions);
-  console.log(this.methodologyModel);
 
   return this.methodologyModel;
 };
