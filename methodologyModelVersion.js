@@ -84,8 +84,8 @@ var myVersion = new Version({
 myVersion.prepareMethodologyModelVersionBuilder()
   .then(function() {
     var methodologyModelDeltaBuilderController = new MethodologyModelDeltaBuilderController();
-    console.log(methodologyModelDeltaBuilderController
-        .buildMethodologyModelFromDeltaVersion(myVersion.methodologyModel, myVersion.methodologyModelDelta));
+    methodologyModelDeltaBuilderController
+        .buildMethodologyModelFromDeltaVersion(myVersion.methodologyModel, myVersion.methodologyModelDelta);
   })
   .catch(function(error) {
     console.log(error);
