@@ -1,14 +1,8 @@
-var axios = require('axios');
 var Promise = require('bluebird');
 var MethodologyModelDeltaBuilderController = require('./methodologyModelDeltaBuilderController');
+var DbConnection = require('./dbInstance.js');
 
-var dbInstance = axios.create({
-  baseURL: 'http://localhost:9000/plugin/',
-  headers: {
-    'X-BAASBOX-APPCODE': '1234567890',
-    'Authorization': 'Basic YWRtaW46YWRtaW4=',
-  },
-});
+var dbInstance;
 
 // Constructor
 function Version(payload) {
@@ -16,6 +10,7 @@ function Version(payload) {
   this.id = payload.methodologyModelVersionId;
   this.methodologyModel = payload.methodologyModel;
   this.methodologyModelId = payload.methodologyModelId;
+  dbInstance = new DbConnection(payload.connectionConfiguration);
 };
 
 Version.prototype.prepareMethodologyModelVersionBuilder = function() {
@@ -34,11 +29,9 @@ Version.prototype.setMethodologyModelDelta = function() {
   return new Promise(function(fulfill, reject) {
     if (this.id && !this.methodologyModelDelta) {
 
-      dbInstance.get('gps.methodology_model_version?id=' + this.id + '&loadDeltaData=true', {
-        data: {},
-      })
+      dbInstance.performGet('gps.methodology_model_version?id=' + this.id + '&loadDeltaData=true')
         .then(function(serverResponse) {
-          var methodologyModelDelta = serverResponse.data.data;
+          var methodologyModelDelta = serverResponse.data;
           this.methodologyModelDelta = methodologyModelDelta;
           fulfill(this.methodologyModelDelta);
         }.bind(this))
@@ -54,11 +47,9 @@ Version.prototype.setMethodologyModelDelta = function() {
 Version.prototype.setMethodologyModel = function() {
   return new Promise(function(fulfill, reject) {
     if (this.methodologyModelId && !this.methodologyModel) {
-      dbInstance.get('gps.discipline?methodologyModelId=' + this.methodologyModelId + '&questionnaireLoad=true', {
-        data: {},
-      })
+      dbInstance.performGet('gps.discipline?methodologyModelId=' + this.methodologyModelId + '&questionnaireLoad=true')
         .then(function(serverResponse) {
-          var methodologyModel = serverResponse.data.data;
+          var methodologyModel = serverResponse.data;
           this.methodologyModel = methodologyModel.disciplines;
           fulfill(methodologyModel.disciplines);
         }.bind(this))
@@ -72,23 +63,6 @@ Version.prototype.setMethodologyModel = function() {
   }.bind(this));
 };
 
-Version.prototype.loadMethodologyModelDeltaVersionFromId = function(methodologyModelVersionId) {
-  methodologyModelVersionId = methodologyModelVersionId || this.id;
-  return new Promise(function(fulfill, reject) {
-    dbInstance.get('gps.methodology_model_version?id=' + methodologyModelVersionId + '&loadDeltaData=true', {
-      data: {},
-    })
-      .then(function(serverResponse) {
-        var methodologyModelDeltaVersion = serverResponse.data.data;
-        //console.log(this);
-        fulfill(methodologyModelDeltaVersion);
-      }.bind(this))
-      .catch(function(error) {
-        reject(error);
-      });
-  }.bind(this));
-};
-
 Version.prototype.getElementsForAddDeltaProcess = function() {
   var addDelta = this.methodologyModelDelta.add;
 };
@@ -96,36 +70,19 @@ Version.prototype.getElementsForAddDeltaProcess = function() {
 var myVersion = new Version({
   methodologyModelVersionId: 'e8b082d1-e5c6-4bae-a1ce-fbb930baa271',
   methodologyModelId: '0C4932BC-D9EE-FE76-FFCE-916E30D09C00',
+  connectionConfiguration: {
+    domainProtocol: 'http://',
+    host: 'localhost',
+    port: '9000',
+    headers: {
+      'X-BAASBOX-APPCODE': '1234567890',
+      'Authorization': 'Basic YWRtaW46YWRtaW4=',
+    },
+  },
 });
 
-//setTimeout(function() {console.log(myVersion)}, 3000);
-
-/*var http = require('http');
-
-const PORT = 8080;
-
-function handleRequest(request, response) {
-  myVersion.prepareMethodologyModelVersionBuilder()
-    .then(function() {
-      //console.log(myVersion.methodologyModelDelta.add.disciplines);
-      var methodologyModelDeltaBuilderController = new MethodologyModelDeltaBuilderController();
-      response.end(JSON.stringify(methodologyModelDeltaBuilderController
-          .buildMethodologyModelFromDeltaVersion(myVersion.methodologyModel, myVersion.methodologyModelDelta)));
-    })
-    .catch(function(error) {
-      console.log(error);
-    });
-
-};
-
-var server = http.createServer(handleRequest);
-
-server.listen(PORT, function() {
-  console.log('Server listening on: http://localhost:%s', PORT);
-});*/
 myVersion.prepareMethodologyModelVersionBuilder()
   .then(function() {
-    //console.log(myVersion.methodologyModelDelta.add.disciplines);
     var methodologyModelDeltaBuilderController = new MethodologyModelDeltaBuilderController();
     console.log(methodologyModelDeltaBuilderController
         .buildMethodologyModelFromDeltaVersion(myVersion.methodologyModel, myVersion.methodologyModelDelta));
