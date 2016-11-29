@@ -76,6 +76,7 @@ Version.prototype.getElementsForAddDeltaProcess = function() {
 };
 
 Version.prototype.build = function(options) {
+  options = options || {};
   return new Promise(function(fulfill, reject) {
     this.prepareMethodologyModelVersionBuilder()
       .then(function(versionModel) {
@@ -92,7 +93,7 @@ Version.prototype.build = function(options) {
 };
 
 Version.prototype.cleanBuild = function(options) {
-  if (!options.keepOroginalQuestionnaire && this.questionnaireWasSentOnConstruction ||
+  if ((!options.keepOroginalQuestionnaire && this.questionnaireWasSentOnConstruction) ||
       options.removeOriginalQuestionnaire) {
     delete this.methodologyModel;
   }
