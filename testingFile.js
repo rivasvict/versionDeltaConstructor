@@ -14,10 +14,10 @@ var myVersion = new Version({
   },
 });
 
-myVersion.prepareMethodologyModelVersionBuilder()
-  .then(function(versionModel) {
-    versionModel.buildVersion();
-  })
-  .catch(function(error) {
-    console.log(error);
-  });
+myVersion.build()
+	.then(function() {
+		console.log(myVersion);
+	})
+	.catch(function(error) {
+		console.log(error)
+	});

@@ -11,6 +11,7 @@ function Version(payload) {
   this.id = payload.methodologyModelVersionId;
   this.methodologyModel = payload.methodologyModel;
   this.methodologyModelId = payload.methodologyModelId;
+  this.questionnaireWasSentOnConstruction = this.methodologyModel ? true : false;
   dbInstance = new DbConnection({
     connectionConfiguration: payload.connectionConfiguration,
     alreadyResolvedDependencies: {
@@ -74,9 +75,27 @@ Version.prototype.getElementsForAddDeltaProcess = function() {
   var addDelta = this.methodologyModelDelta.add;
 };
 
-Version.prototype.buildVersion = function() {
-  return methodologyModelDeltaBuilderController
-    .buildMethodologyModelFromDeltaVersion(this.methodologyModel, this.methodologyModelDelta);
+Version.prototype.build = function(options) {
+  return new Promise(function(fulfill, reject) {
+    this.prepareMethodologyModelVersionBuilder()
+      .then(function(versionModel) {
+        var versionedQuestionnaire = methodologyModelDeltaBuilderController
+          .buildMethodologyModelFromDeltaVersion(versionModel.methodologyModel, versionModel.methodologyModelDelta);
+        this.versionedQuestionnaire = versionedQuestionnaire;
+        this.cleanBuild(options);
+        fulfill(versionedQuestionnaire);
+      }.bind(this))
+      .catch(function(error) {
+        reject(error);
+      });
+  }.bind(this));
+};
+
+Version.prototype.cleanBuild = function(options) {
+  if (!options.keepOroginalQuestionnaire && this.questionnaireWasSentOnConstruction ||
+      options.removeOriginalQuestionnaire) {
+    delete this.methodologyModel;
+  }
 };
 
 module.exports = Version;
