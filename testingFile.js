@@ -24,4 +24,3 @@ myVersion.prepareMethodologyModelVersionBuilder()
   .catch(function(error) {
     console.log(error);
   });
-
