@@ -1,7 +1,9 @@
 var Promise = require('bluebird');
 var DbConnection = require('./dbInstance.js');
+var MethodologyModelDeltaBuilderController = require('./methodologyModelDeltaBuilderController');
 
 var dbInstance;
+var methodologyModelDeltaBuilderController;
 
 // Constructor
 function Version(payload) {
@@ -9,15 +11,21 @@ function Version(payload) {
   this.id = payload.methodologyModelVersionId;
   this.methodologyModel = payload.methodologyModel;
   this.methodologyModelId = payload.methodologyModelId;
-  dbInstance = new DbConnection(payload.connectionConfiguration);
+  dbInstance = new DbConnection({
+    connectionConfiguration: payload.connectionConfiguration,
+    alreadyResolvedDependencies: {
+      bluebird: Promise,
+    },
+  });
+  methodologyModelDeltaBuilderController = new MethodologyModelDeltaBuilderController();
 };
 
 Version.prototype.prepareMethodologyModelVersionBuilder = function() {
   return new Promise(function(resolve, reject) {
     Promise.all([this.setMethodologyModelDelta(), this.setMethodologyModel(),])
       .then(function() {
-        resolve();
-      })
+        resolve(this);
+      }.bind(this))
       .catch(function(error) {
         reject(error);
       });
@@ -54,7 +62,7 @@ Version.prototype.setMethodologyModel = function() {
         }.bind(this))
         .catch(function(error) {
           console.log(error);
-          reject();
+          reject(error);
         });
       return;
     }
@@ -64,6 +72,11 @@ Version.prototype.setMethodologyModel = function() {
 
 Version.prototype.getElementsForAddDeltaProcess = function() {
   var addDelta = this.methodologyModelDelta.add;
+};
+
+Version.prototype.buildVersion = function() {
+  return methodologyModelDeltaBuilderController
+    .buildMethodologyModelFromDeltaVersion(this.methodologyModel, this.methodologyModelDelta);
 };
 
 module.exports = Version;

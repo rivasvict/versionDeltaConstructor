@@ -1,5 +1,4 @@
 var Version = require('./methodologyModelVersion');
-var MethodologyModelDeltaBuilderController = require('./methodologyModelDeltaBuilderController');
 
 var myVersion = new Version({
   methodologyModelVersionId: 'e8b082d1-e5c6-4bae-a1ce-fbb930baa271',
@@ -16,10 +15,8 @@ var myVersion = new Version({
 });
 
 myVersion.prepareMethodologyModelVersionBuilder()
-  .then(function() {
-    var methodologyModelDeltaBuilderController = new MethodologyModelDeltaBuilderController();
-    methodologyModelDeltaBuilderController
-        .buildMethodologyModelFromDeltaVersion(myVersion.methodologyModel, myVersion.methodologyModelDelta);
+  .then(function(versionModel) {
+    versionModel.buildVersion();
   })
   .catch(function(error) {
     console.log(error);

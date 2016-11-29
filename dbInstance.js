@@ -1,14 +1,15 @@
 var axios = require('axios');
-var Promise = require('bluebird');
+var Promise;
 
 function DbInstance(payload) {
-  this.DOMAIN_PROTOCOL = payload.domainProtocol || '',
-  this.HOST = payload.host || '';
-  this.PORT = payload.port || '',
+  Promise = payload.alreadyResolvedDependencies.bluebird || require('bluebird');
+  this.DOMAIN_PROTOCOL = payload.connectionConfiguration.domainProtocol || '',
+  this.HOST = payload.connectionConfiguration.host || '';
+  this.PORT = payload.connectionConfiguration.port || '',
   this.RESOURCE_DIRECTORY = 'plugin';
-  this.BASE_URL = payload.baseUrl ||
+  this.BASE_URL = payload.connectionConfiguration.baseUrl ||
     this.DOMAIN_PROTOCOL + this.HOST + ':' + this.PORT + '/' + this.RESOURCE_DIRECTORY + '/';
-  this.headers = payload.headers || undefined;
+  this.headers = payload.connectionConfiguration.headers || undefined;
   this.JQUERY_NAME = 'jquery';
   this.AXIOS_NAME = 'axios';
   var isJqueryUnavailable = typeof $ === 'undefined';
