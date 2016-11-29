@@ -1,4 +1,4 @@
-var _ = require('underscore');
+var _ = typeof window !== 'undefined' && typeof window._ !== 'undefined' ? window._ : require('underscore');
 
 function MethodologyModelDeltaBuilderController() {};
 

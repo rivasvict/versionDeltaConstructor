@@ -1,4 +1,4 @@
-var Promise = require('bluebird');
+var Promise = typeof window !== 'undefined' && typeof window.Promise !== 'undefined' ? window.Promise : require('bluebird');
 var DbConnection = require('./dbInstance.js');
 var MethodologyModelDeltaBuilderController = require('./methodologyModelDeltaBuilderController');
 

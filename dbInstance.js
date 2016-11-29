@@ -1,4 +1,4 @@
-var axios = require('axios');
+var axios;
 var Promise;
 
 function DbInstance(payload) {
@@ -14,7 +14,10 @@ function DbInstance(payload) {
   this.AXIOS_NAME = 'axios';
   var isJqueryUnavailable = typeof $ === 'undefined';
   this.typeOfConfiguration = isJqueryUnavailable ? this.AXIOS_NAME : this.JQUERY_NAME;
-  this.axiosConnection = this.typeOfConfiguration === this.AXIOS_NAME ? this.getAxiosConnection() : undefined;
+  if (isJqueryUnavailable) {
+    axios = require('axios');
+    this.axiosConnection = this.typeOfConfiguration === this.AXIOS_NAME ? this.getAxiosConnection() : undefined;
+  }
 };
 
 DbInstance.prototype.getAxiosConnection = function() {
