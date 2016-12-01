@@ -96,8 +96,7 @@ MethodologyModelVersion.prototype.cleanBuild = function(options) {
   if (!options.keepAllObjectData) {
     this.cleanAll();
   } else {
-    if ((!options.keepOroginalQuestionnaireOnTheObject && this.questionnaireWasSentOnConstruction) ||
-      options.removeOriginalQuestionnaireFromTheObject) {
+    if (options.removeOriginalQuestionnaireFromTheObject) {
       delete this.methodologyModel;
     }
     if (options.removeVersionedQuestionnaireOnTheObject) {
@@ -110,7 +109,7 @@ MethodologyModelVersion.prototype.cleanBuild = function(options) {
   delete this.questionnaireWasSentOnConstruction;
 };
 
-MethodologyModelVersion.prototype.cleanAll = function(options) {
+MethodologyModelVersion.prototype.cleanAll = function() {
   delete this.methodologyModelDelta;
   delete this.versionedQuestionnaire;
   delete this.methodologyModel;

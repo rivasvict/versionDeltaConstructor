@@ -1,4 +1,4 @@
-(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.Version = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.MethodologyModelVersion = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 var axios;
 var Promise;
 
@@ -76,9 +76,9 @@ DbInstance.prototype.jqueryGet = function(url) {
 module.exports = DbInstance;
 
 },{"axios":"axios","bluebird":"bluebird"}],2:[function(require,module,exports){
-var Version = require('./methodologyModelVersion');
+var MethodologyModelVersion = require('./methodologyModelVersion');
 
-module.exports = Version;
+module.exports = MethodologyModelVersion;
 
 },{"./methodologyModelVersion":4}],3:[function(require,module,exports){
 var _ = typeof window !== 'undefined' && typeof window._ !== 'undefined' ? window._ : require('underscore');
@@ -198,7 +198,7 @@ var dbInstance;
 var methodologyModelDeltaBuilderController;
 
 // Constructor
-function Version(payload) {
+function MethodologyModelVersion(payload) {
   this.methodologyModelDelta = payload.methodologyModelVersion;
   this.id = payload.methodologyModelVersionId;
   this.methodologyModel = payload.methodologyModel;
@@ -213,7 +213,7 @@ function Version(payload) {
   methodologyModelDeltaBuilderController = new MethodologyModelDeltaBuilderController();
 };
 
-Version.prototype.prepareMethodologyModelVersionBuilder = function() {
+MethodologyModelVersion.prototype.prepareMethodologyModelVersionBuilder = function() {
   return new Promise(function(resolve, reject) {
     Promise.all([this.setMethodologyModelDelta(), this.setMethodologyModel(),])
       .then(function() {
@@ -225,7 +225,7 @@ Version.prototype.prepareMethodologyModelVersionBuilder = function() {
   }.bind(this));
 };
 
-Version.prototype.setMethodologyModelDelta = function() {
+MethodologyModelVersion.prototype.setMethodologyModelDelta = function() {
   return new Promise(function(fulfill, reject) {
     if (this.id && !this.methodologyModelDelta) {
 
@@ -244,7 +244,7 @@ Version.prototype.setMethodologyModelDelta = function() {
   }.bind(this));
 };
 
-Version.prototype.setMethodologyModel = function() {
+MethodologyModelVersion.prototype.setMethodologyModel = function() {
   return new Promise(function(fulfill, reject) {
     if (this.methodologyModelId && !this.methodologyModel) {
       dbInstance.performGet('gps.discipline?methodologyModelId=' + this.methodologyModelId + '&questionnaireLoad=true')
@@ -263,11 +263,11 @@ Version.prototype.setMethodologyModel = function() {
   }.bind(this));
 };
 
-Version.prototype.getElementsForAddDeltaProcess = function() {
+MethodologyModelVersion.prototype.getElementsForAddDeltaProcess = function() {
   var addDelta = this.methodologyModelDelta.add;
 };
 
-Version.prototype.build = function(options) {
+MethodologyModelVersion.prototype.build = function(options) {
   options = options || {};
   return new Promise(function(fulfill, reject) {
     this.prepareMethodologyModelVersionBuilder()
@@ -275,8 +275,8 @@ Version.prototype.build = function(options) {
         var versionedQuestionnaire = methodologyModelDeltaBuilderController
           .buildMethodologyModelFromDeltaVersion(versionModel.methodologyModel, versionModel.methodologyModelDelta);
         this.versionedQuestionnaire = versionedQuestionnaire;
-        this.cleanBuild(options);
         fulfill(versionedQuestionnaire);
+        this.cleanBuild(options);
       }.bind(this))
       .catch(function(error) {
         reject(error);
@@ -284,14 +284,30 @@ Version.prototype.build = function(options) {
   }.bind(this));
 };
 
-Version.prototype.cleanBuild = function(options) {
-  if ((!options.keepOroginalQuestionnaire && this.questionnaireWasSentOnConstruction) ||
-      options.removeOriginalQuestionnaire) {
-    delete this.methodologyModel;
+MethodologyModelVersion.prototype.cleanBuild = function(options) {
+  if (!options.keepAllObjectData) {
+    this.cleanAll();
+  } else {
+    if (options.removeOriginalQuestionnaireFromTheObject) {
+      delete this.methodologyModel;
+    }
+    if (options.removeVersionedQuestionnaireOnTheObject) {
+      delete this.versionedQuestionnaire;
+    }
+    if (options.removeMethodologyModelDeltaOnTheObject) {
+      delete this.methodologyModelDelta;
+    }
   }
+  delete this.questionnaireWasSentOnConstruction;
 };
 
-module.exports = Version;
+MethodologyModelVersion.prototype.cleanAll = function(options) {
+  delete this.methodologyModelDelta;
+  delete this.versionedQuestionnaire;
+  delete this.methodologyModel;
+};
+
+module.exports = MethodologyModelVersion;
 
 },{"./dbInstance.js":1,"./methodologyModelDeltaBuilderController":3,"bluebird":"bluebird"}]},{},[2])(2)
 });
