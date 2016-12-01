@@ -9,9 +9,9 @@ var methodologyModelDeltaBuilderController;
 function MethodologyModelVersion(payload) {
   this.methodologyModelDelta = payload.methodologyModelVersion;
   this.id = payload.methodologyModelVersionId;
-  this.methodologyModel = payload.methodologyModel;
+  this.questionnaire = payload.questionnaire;
   this.methodologyModelId = payload.methodologyModelId;
-  this.questionnaireWasSentOnConstruction = this.methodologyModel ? true : false;
+  this.questionnaireWasSentOnConstruction = this.questionnaire ? true : false;
   dbInstance = new DbConnection({
     connectionConfiguration: payload.connectionConfiguration,
     alreadyResolvedDependencies: {
@@ -23,7 +23,7 @@ function MethodologyModelVersion(payload) {
 
 MethodologyModelVersion.prototype.prepareMethodologyModelVersionBuilder = function() {
   return new Promise(function(resolve, reject) {
-    Promise.all([this.setMethodologyModelDelta(), this.setMethodologyModel(),])
+    Promise.all([this.setMethodologyModelDelta(), this.setQuestionnaire(),])
       .then(function() {
         resolve(this);
       }.bind(this))
@@ -52,14 +52,14 @@ MethodologyModelVersion.prototype.setMethodologyModelDelta = function() {
   }.bind(this));
 };
 
-MethodologyModelVersion.prototype.setMethodologyModel = function() {
+MethodologyModelVersion.prototype.setQuestionnaire = function() {
   return new Promise(function(fulfill, reject) {
-    if (this.methodologyModelId && !this.methodologyModel) {
+    if (this.methodologyModelId && !this.questionnaire) {
       dbInstance.performGet('gps.discipline?methodologyModelId=' + this.methodologyModelId + '&questionnaireLoad=true')
         .then(function(serverResponse) {
           var methodologyModel = serverResponse.data;
-          this.methodologyModel = methodologyModel.disciplines;
-          fulfill(methodologyModel.disciplines);
+          this.questionnaire = methodologyModel.disciplines;
+          fulfill(this.questionnaire);
         }.bind(this))
         .catch(function(error) {
           console.log(error);
@@ -67,7 +67,7 @@ MethodologyModelVersion.prototype.setMethodologyModel = function() {
         });
       return;
     }
-    fulfill(this.methodologyModel);
+    fulfill(this.questionnaire);
   }.bind(this));
 };
 
@@ -81,7 +81,7 @@ MethodologyModelVersion.prototype.build = function(options) {
     this.prepareMethodologyModelVersionBuilder()
       .then(function(versionModel) {
         var versionedQuestionnaire = methodologyModelDeltaBuilderController
-          .buildMethodologyModelFromDeltaVersion(versionModel.methodologyModel, versionModel.methodologyModelDelta);
+          .buildMethodologyModelFromDeltaVersion(versionModel.questionnaire, versionModel.methodologyModelDelta);
         this.versionedQuestionnaire = versionedQuestionnaire;
         fulfill(versionedQuestionnaire);
         this.cleanBuild(options);
@@ -97,7 +97,7 @@ MethodologyModelVersion.prototype.cleanBuild = function(options) {
     this.cleanAll();
   } else {
     if (options.removeOriginalQuestionnaireFromTheObject) {
-      delete this.methodologyModel;
+      delete this.questionnaire;
     }
     if (options.removeVersionedQuestionnaireOnTheObject) {
       delete this.versionedQuestionnaire;
@@ -112,7 +112,7 @@ MethodologyModelVersion.prototype.cleanBuild = function(options) {
 MethodologyModelVersion.prototype.cleanAll = function() {
   delete this.methodologyModelDelta;
   delete this.versionedQuestionnaire;
-  delete this.methodologyModel;
+  delete this.questionnaire;
 };
 
 module.exports = MethodologyModelVersion;

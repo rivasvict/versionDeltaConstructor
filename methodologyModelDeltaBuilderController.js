@@ -2,17 +2,17 @@ var _ = typeof window !== 'undefined' && typeof window._ !== 'undefined' ? windo
 
 function MethodologyModelDeltaBuilderController() {};
 
-MethodologyModelDeltaBuilderController.prototype.buildMethodologyModelFromDeltaVersion = function(methodologyModel, delta) {
-  this.methodologyModel = methodologyModel;
+MethodologyModelDeltaBuilderController.prototype.buildMethodologyModelFromDeltaVersion = function(questionnaire, delta) {
+  this.questionnaire = questionnaire;
   this.delta = delta;
   this.removeElementsThatWereRemoved();
   this.addElementsThatWereAdded();
 
-  return this.methodologyModel;
+  return this.questionnaire;
 };
 
 MethodologyModelDeltaBuilderController.prototype.initializeEmptyArraysForPracticesInDisciplines = function() {
-  _.each(this.methodologyModel, function(discipline) {
+  _.each(this.questionnaire, function(discipline) {
     discipline.practices = discipline.practices || [];
   });
 };
@@ -31,7 +31,7 @@ MethodologyModelDeltaBuilderController.prototype.removeElementsThatWereRemoved =
 
 MethodologyModelDeltaBuilderController.prototype.removeQuestions = function() {
   _.each(this.delta.remove.questions, function(questionId) {
-    _.find(this.methodologyModel, function(discipline) {
+    _.find(this.questionnaire, function(discipline) {
       _.find(discipline.practices, function(practice) {
         var foundQuestion = _.findWhere(practice.questions, { id: questionId, });
         practice.questions = _.without(practice.questions, foundQuestion);
@@ -43,7 +43,7 @@ MethodologyModelDeltaBuilderController.prototype.removeQuestions = function() {
 
 MethodologyModelDeltaBuilderController.prototype.removePractices = function() {
   _.each(this.delta.remove.practices, function(practiceId) {
-    _.find(this.methodologyModel, function(discipline) {
+    _.find(this.questionnaire, function(discipline) {
       var foundPractice = _.findWhere(discipline.practices, { id: practiceId, });
       discipline.practices = _.without(discipline.practices, foundPractice);
       return foundPractice;
@@ -53,7 +53,7 @@ MethodologyModelDeltaBuilderController.prototype.removePractices = function() {
 
 MethodologyModelDeltaBuilderController.prototype.removeDisciplines = function() {
   _.each(this.delta.remove.disciplines, function(disciplineId) {
-    this.methodologyModel = _.without(this.methodologyModel, _.findWhere(this.methodologyModel, { id: disciplineId, }));
+    this.questionnaire = _.without(this.questionnaire, _.findWhere(this.questionnaire, { id: disciplineId, }));
   }.bind(this));
 };
 
@@ -66,14 +66,14 @@ MethodologyModelDeltaBuilderController.prototype.addElementsThatWereAdded = func
 MethodologyModelDeltaBuilderController.prototype.addDisciplines = function() {
   _.each(this.delta.add.disciplines, function(discplineToAdd) {
     discplineToAdd.practices = discplineToAdd.practices || [];
-    this.methodologyModel.push(discplineToAdd);
+    this.questionnaire.push(discplineToAdd);
   }.bind(this));
 };
 
 MethodologyModelDeltaBuilderController.prototype.addPractices = function() {
   _.each(this.delta.add.practices, function(practiceToAdd) {
     _.find(practiceToAdd.bb_discipline, function(disciplineRelationShip) {
-      var siblingPractices = _.findWhere(this.methodologyModel, { '@rid': disciplineRelationShip, }).practices;
+      var siblingPractices = _.findWhere(this.questionnaire, { '@rid': disciplineRelationShip, }).practices;
       if (siblingPractices) {
         practiceToAdd.questions = practiceToAdd.questions || [];
         siblingPractices.push(practiceToAdd);
@@ -99,7 +99,7 @@ MethodologyModelDeltaBuilderController.prototype.addQuestions = function() {
 
 MethodologyModelDeltaBuilderController.prototype.linearizePractices = function() {
   this.linearizedPractices = [];
-  _.each(this.methodologyModel, function(discipline) {
+  _.each(this.questionnaire, function(discipline) {
     _.extend(this.linearizedPractices, discipline.practices);
   }.bind(this));
 };
