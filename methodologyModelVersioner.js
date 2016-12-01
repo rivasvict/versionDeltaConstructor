@@ -85,17 +85,17 @@ var _ = typeof window !== 'undefined' && typeof window._ !== 'undefined' ? windo
 
 function MethodologyModelDeltaBuilderController() {};
 
-MethodologyModelDeltaBuilderController.prototype.buildMethodologyModelFromDeltaVersion = function(methodologyModel, delta) {
-  this.methodologyModel = methodologyModel;
+MethodologyModelDeltaBuilderController.prototype.buildMethodologyModelFromDeltaVersion = function(questionnaire, delta) {
+  this.questionnaire = questionnaire;
   this.delta = delta;
   this.removeElementsThatWereRemoved();
   this.addElementsThatWereAdded();
 
-  return this.methodologyModel;
+  return this.questionnaire;
 };
 
 MethodologyModelDeltaBuilderController.prototype.initializeEmptyArraysForPracticesInDisciplines = function() {
-  _.each(this.methodologyModel, function(discipline) {
+  _.each(this.questionnaire, function(discipline) {
     discipline.practices = discipline.practices || [];
   });
 };
@@ -114,7 +114,7 @@ MethodologyModelDeltaBuilderController.prototype.removeElementsThatWereRemoved =
 
 MethodologyModelDeltaBuilderController.prototype.removeQuestions = function() {
   _.each(this.delta.remove.questions, function(questionId) {
-    _.find(this.methodologyModel, function(discipline) {
+    _.find(this.questionnaire, function(discipline) {
       _.find(discipline.practices, function(practice) {
         var foundQuestion = _.findWhere(practice.questions, { id: questionId, });
         practice.questions = _.without(practice.questions, foundQuestion);
@@ -126,7 +126,7 @@ MethodologyModelDeltaBuilderController.prototype.removeQuestions = function() {
 
 MethodologyModelDeltaBuilderController.prototype.removePractices = function() {
   _.each(this.delta.remove.practices, function(practiceId) {
-    _.find(this.methodologyModel, function(discipline) {
+    _.find(this.questionnaire, function(discipline) {
       var foundPractice = _.findWhere(discipline.practices, { id: practiceId, });
       discipline.practices = _.without(discipline.practices, foundPractice);
       return foundPractice;
@@ -136,7 +136,7 @@ MethodologyModelDeltaBuilderController.prototype.removePractices = function() {
 
 MethodologyModelDeltaBuilderController.prototype.removeDisciplines = function() {
   _.each(this.delta.remove.disciplines, function(disciplineId) {
-    this.methodologyModel = _.without(this.methodologyModel, _.findWhere(this.methodologyModel, { id: disciplineId, }));
+    this.questionnaire = _.without(this.questionnaire, _.findWhere(this.questionnaire, { id: disciplineId, }));
   }.bind(this));
 };
 
@@ -149,14 +149,14 @@ MethodologyModelDeltaBuilderController.prototype.addElementsThatWereAdded = func
 MethodologyModelDeltaBuilderController.prototype.addDisciplines = function() {
   _.each(this.delta.add.disciplines, function(discplineToAdd) {
     discplineToAdd.practices = discplineToAdd.practices || [];
-    this.methodologyModel.push(discplineToAdd);
+    this.questionnaire.push(discplineToAdd);
   }.bind(this));
 };
 
 MethodologyModelDeltaBuilderController.prototype.addPractices = function() {
   _.each(this.delta.add.practices, function(practiceToAdd) {
     _.find(practiceToAdd.bb_discipline, function(disciplineRelationShip) {
-      var siblingPractices = _.findWhere(this.methodologyModel, { '@rid': disciplineRelationShip, }).practices;
+      var siblingPractices = _.findWhere(this.questionnaire, { '@rid': disciplineRelationShip, }).practices;
       if (siblingPractices) {
         practiceToAdd.questions = practiceToAdd.questions || [];
         siblingPractices.push(practiceToAdd);
@@ -182,7 +182,7 @@ MethodologyModelDeltaBuilderController.prototype.addQuestions = function() {
 
 MethodologyModelDeltaBuilderController.prototype.linearizePractices = function() {
   this.linearizedPractices = [];
-  _.each(this.methodologyModel, function(discipline) {
+  _.each(this.questionnaire, function(discipline) {
     _.extend(this.linearizedPractices, discipline.practices);
   }.bind(this));
 };
@@ -201,9 +201,8 @@ var methodologyModelDeltaBuilderController;
 function MethodologyModelVersion(payload) {
   this.methodologyModelDelta = payload.methodologyModelVersion;
   this.id = payload.methodologyModelVersionId;
-  this.methodologyModel = payload.methodologyModel;
-  this.methodologyModelId = payload.methodologyModelId;
-  this.questionnaireWasSentOnConstruction = this.methodologyModel ? true : false;
+  this.questionnaire = payload.questionnaire;
+  this.questionnaireWasSentOnConstruction = this.questionnaire ? true : false;
   dbInstance = new DbConnection({
     connectionConfiguration: payload.connectionConfiguration,
     alreadyResolvedDependencies: {
@@ -215,7 +214,7 @@ function MethodologyModelVersion(payload) {
 
 MethodologyModelVersion.prototype.prepareMethodologyModelVersionBuilder = function() {
   return new Promise(function(resolve, reject) {
-    Promise.all([this.setMethodologyModelDelta(), this.setMethodologyModel(),])
+    Promise.all(this.getPromiseToLoad())
       .then(function() {
         resolve(this);
       }.bind(this))
@@ -225,10 +224,44 @@ MethodologyModelVersion.prototype.prepareMethodologyModelVersionBuilder = functi
   }.bind(this));
 };
 
+MethodologyModelVersion.prototype.getPromiseToLoad = function() {
+  if (this.id && !this.questionnaire) {
+    return [this.setAllDataCommingFromServer(),];
+  } else if (this.questionnaire && this.id) {
+    return [this.setMethodologyModelDelta(), this.setQuestionnaire(),];
+  }
+};
+
+MethodologyModelVersion.prototype.setAllDataCommingFromServer = function() {
+  return new Promise(function(fulfill, reject) {
+    if (this.id && !this.methodologyModelDelta && !this.questionnaire) {
+      dbInstance
+        .performGet('gps.methodology_model_version?id=' + this.id + '&loadAllDataForQuestionnaireVersioning=true')
+        .then(function(serverResponse) {
+          var methodologyModelDelta = serverResponse.data.methodologyModelVersionDelta;
+          this.methodologyModelDelta = methodologyModelDelta;
+          var methodologyModelQuestionnaire = serverResponse.data.methodologyModelWithQestionnaire;
+          this.questionnaire = methodologyModelQuestionnaire.disciplines;
+          fulfill({
+            methodologyModelDelta: this.methodologyModelDelta,
+            questionnaire: this.questionnaire,
+          });
+        }.bind(this))
+        .catch(function(error) {
+          reject(error);
+        });
+      return;
+    }
+    fulfill({
+      methodologyModelDelta: this.methodologyModelDelta,
+      questionnaire: this.questionnaire,
+    });
+  }.bind(this));
+};
+
 MethodologyModelVersion.prototype.setMethodologyModelDelta = function() {
   return new Promise(function(fulfill, reject) {
     if (this.id && !this.methodologyModelDelta) {
-
       dbInstance.performGet('gps.methodology_model_version?id=' + this.id + '&loadDeltaData=true')
         .then(function(serverResponse) {
           var methodologyModelDelta = serverResponse.data;
@@ -244,14 +277,14 @@ MethodologyModelVersion.prototype.setMethodologyModelDelta = function() {
   }.bind(this));
 };
 
-MethodologyModelVersion.prototype.setMethodologyModel = function() {
+MethodologyModelVersion.prototype.setQuestionnaire = function() {
   return new Promise(function(fulfill, reject) {
-    if (this.methodologyModelId && !this.methodologyModel) {
+    if (this.methodologyModelId && !this.questionnaire) {
       dbInstance.performGet('gps.discipline?methodologyModelId=' + this.methodologyModelId + '&questionnaireLoad=true')
         .then(function(serverResponse) {
           var methodologyModel = serverResponse.data;
-          this.methodologyModel = methodologyModel.disciplines;
-          fulfill(methodologyModel.disciplines);
+          this.questionnaire = methodologyModel.disciplines;
+          fulfill(this.questionnaire);
         }.bind(this))
         .catch(function(error) {
           console.log(error);
@@ -259,7 +292,7 @@ MethodologyModelVersion.prototype.setMethodologyModel = function() {
         });
       return;
     }
-    fulfill(this.methodologyModel);
+    fulfill(this.questionnaire);
   }.bind(this));
 };
 
@@ -273,7 +306,7 @@ MethodologyModelVersion.prototype.build = function(options) {
     this.prepareMethodologyModelVersionBuilder()
       .then(function(versionModel) {
         var versionedQuestionnaire = methodologyModelDeltaBuilderController
-          .buildMethodologyModelFromDeltaVersion(versionModel.methodologyModel, versionModel.methodologyModelDelta);
+          .buildMethodologyModelFromDeltaVersion(versionModel.questionnaire, versionModel.methodologyModelDelta);
         this.versionedQuestionnaire = versionedQuestionnaire;
         fulfill(versionedQuestionnaire);
         this.cleanBuild(options);
@@ -289,7 +322,7 @@ MethodologyModelVersion.prototype.cleanBuild = function(options) {
     this.cleanAll();
   } else {
     if (options.removeOriginalQuestionnaireFromTheObject) {
-      delete this.methodologyModel;
+      delete this.questionnaire;
     }
     if (options.removeVersionedQuestionnaireOnTheObject) {
       delete this.versionedQuestionnaire;
@@ -301,10 +334,10 @@ MethodologyModelVersion.prototype.cleanBuild = function(options) {
   delete this.questionnaireWasSentOnConstruction;
 };
 
-MethodologyModelVersion.prototype.cleanAll = function(options) {
+MethodologyModelVersion.prototype.cleanAll = function() {
   delete this.methodologyModelDelta;
   delete this.versionedQuestionnaire;
-  delete this.methodologyModel;
+  delete this.questionnaire;
 };
 
 module.exports = MethodologyModelVersion;

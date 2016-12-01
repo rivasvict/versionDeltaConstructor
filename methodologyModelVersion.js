@@ -10,7 +10,6 @@ function MethodologyModelVersion(payload) {
   this.methodologyModelDelta = payload.methodologyModelVersion;
   this.id = payload.methodologyModelVersionId;
   this.questionnaire = payload.questionnaire;
-  this.methodologyModelId = payload.methodologyModelId;
   this.questionnaireWasSentOnConstruction = this.questionnaire ? true : false;
   dbInstance = new DbConnection({
     connectionConfiguration: payload.connectionConfiguration,
@@ -23,7 +22,7 @@ function MethodologyModelVersion(payload) {
 
 MethodologyModelVersion.prototype.prepareMethodologyModelVersionBuilder = function() {
   return new Promise(function(resolve, reject) {
-    Promise.all([this.setMethodologyModelDelta(), this.setQuestionnaire(),])
+    Promise.all(this.getPromiseToLoad())
       .then(function() {
         resolve(this);
       }.bind(this))
@@ -33,10 +32,44 @@ MethodologyModelVersion.prototype.prepareMethodologyModelVersionBuilder = functi
   }.bind(this));
 };
 
+MethodologyModelVersion.prototype.getPromiseToLoad = function() {
+  if (this.id && !this.questionnaire) {
+    return [this.setAllDataCommingFromServer(),];
+  } else if (this.questionnaire && this.id) {
+    return [this.setMethodologyModelDelta(), this.setQuestionnaire(),];
+  }
+};
+
+MethodologyModelVersion.prototype.setAllDataCommingFromServer = function() {
+  return new Promise(function(fulfill, reject) {
+    if (this.id && !this.methodologyModelDelta && !this.questionnaire) {
+      dbInstance
+        .performGet('gps.methodology_model_version?id=' + this.id + '&loadAllDataForQuestionnaireVersioning=true')
+        .then(function(serverResponse) {
+          var methodologyModelDelta = serverResponse.data.methodologyModelVersionDelta;
+          this.methodologyModelDelta = methodologyModelDelta;
+          var methodologyModelQuestionnaire = serverResponse.data.methodologyModelWithQestionnaire;
+          this.questionnaire = methodologyModelQuestionnaire.disciplines;
+          fulfill({
+            methodologyModelDelta: this.methodologyModelDelta,
+            questionnaire: this.questionnaire,
+          });
+        }.bind(this))
+        .catch(function(error) {
+          reject(error);
+        });
+      return;
+    }
+    fulfill({
+      methodologyModelDelta: this.methodologyModelDelta,
+      questionnaire: this.questionnaire,
+    });
+  }.bind(this));
+};
+
 MethodologyModelVersion.prototype.setMethodologyModelDelta = function() {
   return new Promise(function(fulfill, reject) {
     if (this.id && !this.methodologyModelDelta) {
-
       dbInstance.performGet('gps.methodology_model_version?id=' + this.id + '&loadDeltaData=true')
         .then(function(serverResponse) {
           var methodologyModelDelta = serverResponse.data;

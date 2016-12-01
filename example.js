@@ -1,10 +1,10 @@
 var MethodologyModelVersion = require('./methodologyModelVersion');
 
 // For node Generig implementation
+
 var myVersion = new MethodologyModelVersion({
   methodologyModelVersionId: 'e8b082d1-e5c6-4bae-a1ce-fbb930baa271',
-  methodologyModelId: '0C4932BC-D9EE-FE76-FFCE-916E30D09C00',
-  //methodologyModel can be sent as a parameter to build the questionnaire remember NOT to send the methodologyModelId
+  //questionnaire can be sent as a parameter to build the questionnaire remember NOT to send the methodologyModelId
   connectionConfiguration: {
     domainProtocol: 'http://',
     host: 'localhost',
@@ -19,7 +19,6 @@ var myVersion = new MethodologyModelVersion({
 // For gps client app
 /*var myVersion = new MethodologyModelVersion({
   methodologyModelVersionId: 'e8b082d1-e5c6-4bae-a1ce-fbb930baa271',
-  methodologyModelId: '0C4932BC-D9EE-FE76-FFCE-916E30D09C00',
   //methodologyModel can be sent as a parameter to build the questionnaire remember NOT to send the methodologyModelId
   connectionConfiguration: {
     baseUrl: PLUGIN_API_URL,
