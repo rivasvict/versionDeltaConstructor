@@ -26,11 +26,15 @@ var myVersion = new MethodologyModelVersion({
 });*/
 
 myVersion.build({
-  //removeOriginalQuestionnaire: true,        // For removing the original questionnaire from the version object
-  //keepOroginalQuestionnaire: true,          // For keeping the original questionnaire from the version object
+  //keepAllObjectData: true,                          // For keeping all object data
+  //removeOriginalQuestionnaireFromTheObject: true,   // For removing the original questionnaire from the version object
+  //keepOroginalQuestionnaireOnTheObject: true,       // For keeping the original questionnaire from the version object
+  //removeVersionedQuestionnaireOnTheObject: true     // For keeping the versioned questionnaire on the object
+  //removeMethodologyModelDeltaOnTheObject: true      // For keeping the methodologu model delta on the object
 })
-  .then(function(versionedQuestionnaire) {
-    console.log(versionedQuestionnaire);
+  .then(function(methodologyModelVersion) {
+    //console.log(methodologyModelVersion);
+    console.log(myVersion);
   })
   .catch(function(error) {
     console.log(error);

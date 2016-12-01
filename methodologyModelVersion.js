@@ -83,8 +83,8 @@ MethodologyModelVersion.prototype.build = function(options) {
         var versionedQuestionnaire = methodologyModelDeltaBuilderController
           .buildMethodologyModelFromDeltaVersion(versionModel.methodologyModel, versionModel.methodologyModelDelta);
         this.versionedQuestionnaire = versionedQuestionnaire;
-        this.cleanBuild(options);
         fulfill(versionedQuestionnaire);
+        this.cleanBuild(options);
       }.bind(this))
       .catch(function(error) {
         reject(error);
@@ -93,10 +93,27 @@ MethodologyModelVersion.prototype.build = function(options) {
 };
 
 MethodologyModelVersion.prototype.cleanBuild = function(options) {
-  if ((!options.keepOroginalQuestionnaire && this.questionnaireWasSentOnConstruction) ||
-      options.removeOriginalQuestionnaire) {
-    delete this.methodologyModel;
+  if (!options.keepAllObjectData) {
+    this.cleanAll();
+  } else {
+    if ((!options.keepOroginalQuestionnaireOnTheObject && this.questionnaireWasSentOnConstruction) ||
+      options.removeOriginalQuestionnaireFromTheObject) {
+      delete this.methodologyModel;
+    }
+    if (options.removeVersionedQuestionnaireOnTheObject) {
+      delete this.versionedQuestionnaire;
+    }
+    if (options.removeMethodologyModelDeltaOnTheObject) {
+      delete this.methodologyModelDelta;
+    }
   }
+  delete this.questionnaireWasSentOnConstruction;
+};
+
+MethodologyModelVersion.prototype.cleanAll = function(options) {
+  delete this.methodologyModelDelta;
+  delete this.versionedQuestionnaire;
+  delete this.methodologyModel;
 };
 
 module.exports = MethodologyModelVersion;
