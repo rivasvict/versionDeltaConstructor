@@ -81,9 +81,11 @@ var MethodologyModelVersion = require('./methodologyModelVersion');
 module.exports = MethodologyModelVersion;
 
 },{"./methodologyModelVersion":4}],3:[function(require,module,exports){
-var _ = typeof window !== 'undefined' && typeof window._ !== 'undefined' ? window._ : require('underscore');
+var _;
 
-function MethodologyModelDeltaBuilderController() {};
+function MethodologyModelDeltaBuilderController(payload) {
+  _ = payload.alreadyResolvedDependencies.underscore || require('underscore');
+};
 
 MethodologyModelDeltaBuilderController.prototype.buildMethodologyModelFromDeltaVersion = function(questionnaire, delta) {
   this.questionnaire = questionnaire;
@@ -193,6 +195,7 @@ module.exports = MethodologyModelDeltaBuilderController;
 var Promise = typeof window !== 'undefined' && typeof window.Promise !== 'undefined' ? window.Promise : require('bluebird');
 var DbConnection = require('./dbInstance.js');
 var MethodologyModelDeltaBuilderController = require('./methodologyModelDeltaBuilderController');
+var _ = typeof window !== 'undefined' && typeof window._ !== 'undefined' ? window._ : require('underscore');
 
 var dbInstance;
 var methodologyModelDeltaBuilderController;
@@ -209,7 +212,11 @@ function MethodologyModelVersion(payload) {
       bluebird: Promise,
     },
   });
-  methodologyModelDeltaBuilderController = new MethodologyModelDeltaBuilderController();
+  methodologyModelDeltaBuilderController = new MethodologyModelDeltaBuilderController({
+    alreadyResolvedDependencies: {
+      underscore: _,
+    },
+  });
 };
 
 MethodologyModelVersion.prototype.prepareMethodologyModelVersionBuilder = function() {
@@ -308,8 +315,13 @@ MethodologyModelVersion.prototype.build = function(options) {
         var versionedQuestionnaire = methodologyModelDeltaBuilderController
           .buildMethodologyModelFromDeltaVersion(versionModel.questionnaire, versionModel.methodologyModelDelta);
         this.versionedQuestionnaire = versionedQuestionnaire;
-        fulfill(this);
+        var objectForFulfillment = _.clone(this);
         this.cleanBuild(options);
+        fulfill({
+          questionnaire: objectForFulfillment.questionnaire,
+          versionedQuestionnaire: objectForFulfillment.versionedQuestionnaire,
+          methodologyModelDelta: objectForFulfillment.methodologyModelDelta,
+        });
       }.bind(this))
       .catch(function(error) {
         reject(error);
@@ -342,5 +354,5 @@ MethodologyModelVersion.prototype.cleanAll = function() {
 
 module.exports = MethodologyModelVersion;
 
-},{"./dbInstance.js":1,"./methodologyModelDeltaBuilderController":3,"bluebird":"bluebird"}]},{},[2])(2)
+},{"./dbInstance.js":1,"./methodologyModelDeltaBuilderController":3,"bluebird":"bluebird","underscore":"underscore"}]},{},[2])(2)
 });

@@ -1,6 +1,8 @@
-var _ = typeof window !== 'undefined' && typeof window._ !== 'undefined' ? window._ : require('underscore');
+var _;
 
-function MethodologyModelDeltaBuilderController() {};
+function MethodologyModelDeltaBuilderController(payload) {
+  _ = payload.alreadyResolvedDependencies.underscore || require('underscore');
+};
 
 MethodologyModelDeltaBuilderController.prototype.buildMethodologyModelFromDeltaVersion = function(questionnaire, delta) {
   this.questionnaire = questionnaire;
