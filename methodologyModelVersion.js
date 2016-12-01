@@ -116,7 +116,7 @@ MethodologyModelVersion.prototype.build = function(options) {
         var versionedQuestionnaire = methodologyModelDeltaBuilderController
           .buildMethodologyModelFromDeltaVersion(versionModel.questionnaire, versionModel.methodologyModelDelta);
         this.versionedQuestionnaire = versionedQuestionnaire;
-        fulfill(versionedQuestionnaire);
+        fulfill(this);
         this.cleanBuild(options);
       }.bind(this))
       .catch(function(error) {
