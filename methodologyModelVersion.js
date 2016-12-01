@@ -6,7 +6,7 @@ var dbInstance;
 var methodologyModelDeltaBuilderController;
 
 // Constructor
-function Version(payload) {
+function MethodologyModelVersion(payload) {
   this.methodologyModelDelta = payload.methodologyModelVersion;
   this.id = payload.methodologyModelVersionId;
   this.methodologyModel = payload.methodologyModel;
@@ -21,7 +21,7 @@ function Version(payload) {
   methodologyModelDeltaBuilderController = new MethodologyModelDeltaBuilderController();
 };
 
-Version.prototype.prepareMethodologyModelVersionBuilder = function() {
+MethodologyModelVersion.prototype.prepareMethodologyModelVersionBuilder = function() {
   return new Promise(function(resolve, reject) {
     Promise.all([this.setMethodologyModelDelta(), this.setMethodologyModel(),])
       .then(function() {
@@ -33,7 +33,7 @@ Version.prototype.prepareMethodologyModelVersionBuilder = function() {
   }.bind(this));
 };
 
-Version.prototype.setMethodologyModelDelta = function() {
+MethodologyModelVersion.prototype.setMethodologyModelDelta = function() {
   return new Promise(function(fulfill, reject) {
     if (this.id && !this.methodologyModelDelta) {
 
@@ -52,7 +52,7 @@ Version.prototype.setMethodologyModelDelta = function() {
   }.bind(this));
 };
 
-Version.prototype.setMethodologyModel = function() {
+MethodologyModelVersion.prototype.setMethodologyModel = function() {
   return new Promise(function(fulfill, reject) {
     if (this.methodologyModelId && !this.methodologyModel) {
       dbInstance.performGet('gps.discipline?methodologyModelId=' + this.methodologyModelId + '&questionnaireLoad=true')
@@ -71,11 +71,11 @@ Version.prototype.setMethodologyModel = function() {
   }.bind(this));
 };
 
-Version.prototype.getElementsForAddDeltaProcess = function() {
+MethodologyModelVersion.prototype.getElementsForAddDeltaProcess = function() {
   var addDelta = this.methodologyModelDelta.add;
 };
 
-Version.prototype.build = function(options) {
+MethodologyModelVersion.prototype.build = function(options) {
   options = options || {};
   return new Promise(function(fulfill, reject) {
     this.prepareMethodologyModelVersionBuilder()
@@ -92,11 +92,11 @@ Version.prototype.build = function(options) {
   }.bind(this));
 };
 
-Version.prototype.cleanBuild = function(options) {
+MethodologyModelVersion.prototype.cleanBuild = function(options) {
   if ((!options.keepOroginalQuestionnaire && this.questionnaireWasSentOnConstruction) ||
       options.removeOriginalQuestionnaire) {
     delete this.methodologyModel;
   }
 };
 
-module.exports = Version;
+module.exports = MethodologyModelVersion;

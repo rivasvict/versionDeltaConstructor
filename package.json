@@ -2,21 +2,20 @@
   "name": "version-delta-constructor",
   "version": "0.0.1",
   "description": "Delta constructtor for methodology model versioning feature",
-  "main": "deltaVersionBuilder.js",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "axios": "^0.15.1",
     "bluebird": "^3.4.6",
-    "browserfy": "^1.0.0",
     "browserify": "^13.1.1",
     "gulp": "^3.9.1",
     "underscore": "^1.8.3"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vctr90/verionDeltaConstructor.git"
+    "url": "git+https://github.com/vctr90/versionDeltaConstructor.git"
   },
   "keywords": [
     "verion",
@@ -26,7 +25,7 @@
   "author": "Victor Rivas",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/vctr90/verionDeltaConstructor/issues"
+    "url": "https://github.com/vctr90/versionDeltaConstructor/issues"
   },
-  "homepage": "https://github.com/vctr90/verionDeltaConstructor#readme"
+  "homepage": "https://github.com/vctr90/versionDeltaConstructor#readme"
 }

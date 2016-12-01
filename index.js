@@ -1,3 +1,3 @@
-var Version = require('./methodologyModelVersion');
+var MethodologyModelVersion = require('./methodologyModelVersion');
 
-module.exports = Version;
+module.exports = MethodologyModelVersion;
