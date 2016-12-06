@@ -17,7 +17,7 @@ function DbInstance(payload) {
   this.typeOfConfiguration = isJqueryUnavailable ? this.AXIOS_NAME : this.JQUERY_NAME;
   if (isJqueryUnavailable) {
     axios = require('axios');
-    this.axiosConnection = this.typeOfConfiguration === this.AXIOS_NAME ? this.getAxiosConnection() : undefined;
+    this.axiosConnection = this.getAxiosConnection();
   }
 };
 
@@ -29,8 +29,8 @@ DbInstance.prototype.getAxiosConnection = function() {
 };
 
 DbInstance.prototype.performGet = function(url) {
-  var getFuncrion = this.getFunctionReferenceToCall()[this.typeOfConfiguration].get;
-  return getFuncrion.call(this, url);
+  var getFunction = this.getFunctionReferenceToCall()[this.typeOfConfiguration].get;
+  return getFunction.call(this, url);
 };
 
 DbInstance.prototype.getFunctionReferenceToCall = function() {
@@ -233,22 +233,19 @@ MethodologyModelVersion.prototype.prepareMethodologyModelVersionBuilder = functi
 
 MethodologyModelVersion.prototype.getPromiseToLoad = function() {
   if (this.id && !this.questionnaire) {
-    return [this.setAllDataCommingFromServer(),];
+    return [this.fetchAllDataCommingFromServer(),];
   } else if (this.questionnaire && this.id) {
-    return [this.setMethodologyModelDelta(), this.setQuestionnaire(),];
+    return [this.fetchMethodologyModelDelta(), this.fetchQuestionnaire(),];
   }
 };
 
-MethodologyModelVersion.prototype.setAllDataCommingFromServer = function() {
+MethodologyModelVersion.prototype.fetchAllDataCommingFromServer = function() {
   return new Promise(function(fulfill, reject) {
     if (this.id && !this.methodologyModelDelta && !this.questionnaire) {
       dbInstance
         .performGet('gps.methodology_model_version?id=' + this.id + '&loadAllDataForQuestionnaireVersioning=true')
         .then(function(serverResponse) {
-          var methodologyModelDelta = serverResponse.data.methodologyModelVersionDelta;
-          this.methodologyModelDelta = methodologyModelDelta;
-          var methodologyModelQuestionnaire = serverResponse.data.methodologyModelWithQestionnaire;
-          this.questionnaire = methodologyModelQuestionnaire.disciplines;
+          this.setAllDataCommingFromServerResponse(serverResponse);
           fulfill({
             methodologyModelDelta: this.methodologyModelDelta,
             questionnaire: this.questionnaire,
@@ -266,13 +263,19 @@ MethodologyModelVersion.prototype.setAllDataCommingFromServer = function() {
   }.bind(this));
 };
 
-MethodologyModelVersion.prototype.setMethodologyModelDelta = function() {
+MethodologyModelVersion.prototype.setAllDataCommingFromServerResponse = function(serverResponse) {
+  var methodologyModelDelta = serverResponse.data.methodologyModelVersionDelta;
+  this.methodologyModelDelta = methodologyModelDelta;
+  var methodologyModelQuestionnaire = serverResponse.data.methodologyModelWithQestionnaire;
+  this.questionnaire = methodologyModelQuestionnaire.disciplines;
+},
+
+MethodologyModelVersion.prototype.fetchMethodologyModelDelta = function() {
   return new Promise(function(fulfill, reject) {
     if (this.id && !this.methodologyModelDelta) {
       dbInstance.performGet('gps.methodology_model_version?id=' + this.id + '&loadDeltaData=true')
         .then(function(serverResponse) {
-          var methodologyModelDelta = serverResponse.data;
-          this.methodologyModelDelta = methodologyModelDelta;
+          this.setMethodologyModelDeltaFromServerResponse(serverResponse);
           fulfill(this.methodologyModelDelta);
         }.bind(this))
         .catch(function(error) {
@@ -284,13 +287,17 @@ MethodologyModelVersion.prototype.setMethodologyModelDelta = function() {
   }.bind(this));
 };
 
-MethodologyModelVersion.prototype.setQuestionnaire = function() {
+MethodologyModelVersion.prototype.setMethodologyModelDeltaFromServerResponse = function(serverResponse) {
+  var methodologyModelDelta = serverResponse.data;
+  this.methodologyModelDelta = methodologyModelDelta;
+};
+
+MethodologyModelVersion.prototype.fetchQuestionnaire = function() {
   return new Promise(function(fulfill, reject) {
     if (this.methodologyModelId && !this.questionnaire) {
       dbInstance.performGet('gps.discipline?methodologyModelId=' + this.methodologyModelId + '&questionnaireLoad=true')
         .then(function(serverResponse) {
-          var methodologyModel = serverResponse.data;
-          this.questionnaire = methodologyModel.disciplines;
+          this.setQuestionnaireFromServerResponse(serverResponse);
           fulfill(this.questionnaire);
         }.bind(this))
         .catch(function(error) {
@@ -301,6 +308,11 @@ MethodologyModelVersion.prototype.setQuestionnaire = function() {
     }
     fulfill(this.questionnaire);
   }.bind(this));
+};
+
+MethodologyModelVersion.prototype.setQuestionnaireFromServerResponse = function(serverResponse) {
+  var methodologyModel = serverResponse.data;
+  this.questionnaire = methodologyModel.disciplines;
 };
 
 MethodologyModelVersion.prototype.getElementsForAddDeltaProcess = function() {

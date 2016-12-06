@@ -16,7 +16,7 @@ function DbInstance(payload) {
   this.typeOfConfiguration = isJqueryUnavailable ? this.AXIOS_NAME : this.JQUERY_NAME;
   if (isJqueryUnavailable) {
     axios = require('axios');
-    this.axiosConnection = this.typeOfConfiguration === this.AXIOS_NAME ? this.getAxiosConnection() : undefined;
+    this.axiosConnection = this.getAxiosConnection();
   }
 };
 
@@ -28,8 +28,8 @@ DbInstance.prototype.getAxiosConnection = function() {
 };
 
 DbInstance.prototype.performGet = function(url) {
-  var getFuncrion = this.getFunctionReferenceToCall()[this.typeOfConfiguration].get;
-  return getFuncrion.call(this, url);
+  var getFunction = this.getFunctionReferenceToCall()[this.typeOfConfiguration].get;
+  return getFunction.call(this, url);
 };
 
 DbInstance.prototype.getFunctionReferenceToCall = function() {
