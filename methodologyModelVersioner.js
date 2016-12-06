@@ -325,7 +325,7 @@ MethodologyModelVersion.prototype.build = function(options) {
     this.prepareMethodologyModelVersionBuilder()
       .then(function(versionModel) {
         var versionedQuestionnaire = methodologyModelDeltaBuilderController
-          .buildMethodologyModelFromDeltaVersion(versionModel.questionnaire, versionModel.methodologyModelDelta);
+          .buildMethodologyModelFromDeltaVersion(_.clone(versionModel.questionnaire), versionModel.methodologyModelDelta);
         this.versionedQuestionnaire = versionedQuestionnaire;
         var objectForFulfillment = _.clone(this);
         this.cleanBuild(options);
