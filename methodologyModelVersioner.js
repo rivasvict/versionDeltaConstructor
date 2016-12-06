@@ -348,7 +348,7 @@ MethodologyModelVersion.prototype.cleanBuild = function(options) {
     if (options.removeOriginalQuestionnaireFromTheObject) {
       delete this.questionnaire;
     }
-    if (options.removeVersionedQuestionnaireOnTheObject) {
+    if (options.removeVersionedQuestionnaireFromTheObject) {
       delete this.versionedQuestionnaire;
     }
     if (options.removeMethodologyModelDeltaOnTheObject) {

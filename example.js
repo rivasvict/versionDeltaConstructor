@@ -32,7 +32,7 @@ myVersion.build({
   // After using keepAllObjectData you can use the removal options to delete elements from the original object
   //keepAllObjectData: true,                            // For keeping all object data
   //removeOriginalQuestionnaireFromTheObject: true,   // For removing the original questionnaire from the version object
-  //removeVersionedQuestionnaireOnTheObject: true,    // For keeping the versioned questionnaire on the object
+  //removeVersionedQuestionnaireFromTheObject: true,    // For keeping the versioned questionnaire on the object
   //removeMethodologyModelDeltaOnTheObject: true,       // For keeping the methodologu model delta on the object
 })
   .then(function(methodologyModelVersion) {
