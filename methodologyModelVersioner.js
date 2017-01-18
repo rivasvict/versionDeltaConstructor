@@ -88,23 +88,25 @@ function MethodologyModelDeltaBuilderController(payload) {
 };
 
 MethodologyModelDeltaBuilderController.prototype.buildMethodologyModelFromDeltaVersion = function(questionnaire, delta) {
-  this.questionnaire = questionnaire;
+  this.questionnaire = this.copyQuestionnaire(questionnaire);
   this.delta = delta;
+  this.delta.remove = this.delta.remove || {};
+  this.delta.add = this.delta.add || {};
   this.removeElementsThatWereRemoved();
   this.addElementsThatWereAdded();
 
   return this.questionnaire;
 };
 
-MethodologyModelDeltaBuilderController.prototype.initializeEmptyArraysForPracticesInDisciplines = function() {
-  _.each(this.questionnaire, function(discipline) {
-    discipline.practices = discipline.practices || [];
-  });
-};
-
-MethodologyModelDeltaBuilderController.prototype.initializeEmptyArraysForQuestionsInPractices = function() {
-  _.each(this.linearizedPractices, function(practice) {
-    practice.questions = practice.questions || [];
+MethodologyModelDeltaBuilderController.prototype.copyQuestionnaire = function(questionnaire) {
+  return _.map(questionnaire, function(discipline) {
+    discipline.practices = _.map(discipline.practices, function(practice) {
+      practice.questions = _.map(practice.questions, function(question) {
+        return _.clone(question);
+      });
+      return _.clone(practice);
+    });
+    return _.clone(discipline);
   });
 };
 
@@ -129,15 +131,45 @@ MethodologyModelDeltaBuilderController.prototype.removeQuestions = function() {
 MethodologyModelDeltaBuilderController.prototype.removePractices = function() {
   _.each(this.delta.remove.practices, function(practiceId) {
     _.find(this.questionnaire, function(discipline) {
-      var foundPractice = _.findWhere(discipline.practices, { id: practiceId, });
+      var foundPractice = this.maintainRelationshipsInNewComponents({
+        parentComponentName: 'practices',
+        componentId: practiceId,
+        collectionToFind: discipline.practices,
+        childComponentName: 'questions',
+      });
       discipline.practices = _.without(discipline.practices, foundPractice);
       return foundPractice;
     }.bind(this));
   }.bind(this));
 };
 
+MethodologyModelDeltaBuilderController.prototype.maintainRelationshipsInNewComponents = function(options) {
+  var updateMetadata = _.find(this.delta.update[options.parentComponentName], function(updateInfo) {
+    return updateInfo.old === options.componentId;
+  });
+
+  var newComponent = _.find(this.delta.add[options.parentComponentName], function(practice) {
+    return practice.id === (updateMetadata && updateMetadata.new);
+  });
+
+  var oldComponent = _.find(options.collectionToFind, function(model) {
+    return model.id === options.componentId;
+  });
+
+  if (newComponent)
+  newComponent[options.childComponentName] = oldComponent && oldComponent[options.childComponentName];
+
+  return oldComponent;
+};
+
 MethodologyModelDeltaBuilderController.prototype.removeDisciplines = function() {
   _.each(this.delta.remove.disciplines, function(disciplineId) {
+    this.maintainRelationshipsInNewComponents({
+      parentComponentName: 'disciplines',
+      componentId: disciplineId,
+      collectionToFind: this.questionnaire,
+      childComponentName: 'practices',
+    });
     this.questionnaire = _.without(this.questionnaire, _.findWhere(this.questionnaire, { id: disciplineId, }));
   }.bind(this));
 };
@@ -149,20 +181,20 @@ MethodologyModelDeltaBuilderController.prototype.addElementsThatWereAdded = func
 };
 
 MethodologyModelDeltaBuilderController.prototype.addDisciplines = function() {
-  _.each(this.delta.add.disciplines, function(discplineToAdd) {
-    discplineToAdd.practices = discplineToAdd.practices || [];
-    this.questionnaire.push(discplineToAdd);
+  _.each(this.delta.add.disciplines, function(disciplineToAdd) {
+    disciplineToAdd.practices = disciplineToAdd.practices || [];
+    this.questionnaire.push(disciplineToAdd);
   }.bind(this));
 };
 
 MethodologyModelDeltaBuilderController.prototype.addPractices = function() {
   _.each(this.delta.add.practices, function(practiceToAdd) {
     _.find(practiceToAdd.bb_discipline, function(disciplineRelationShip) {
-      var siblingPractices = _.findWhere(this.questionnaire, { '@rid': disciplineRelationShip, }).practices;
-      if (siblingPractices) {
+      var siblingPractices = _.findWhere(this.questionnaire, { '@rid': disciplineRelationShip, });
+      if (siblingPractices && siblingPractices.practices) {
         practiceToAdd.questions = practiceToAdd.questions || [];
-        siblingPractices.push(practiceToAdd);
-        return siblingPractices;
+        siblingPractices.practices.push(practiceToAdd);
+        return siblingPractices.practices;
       }
     }.bind(this));
   }.bind(this));
@@ -174,8 +206,9 @@ MethodologyModelDeltaBuilderController.prototype.addQuestions = function() {
     _.find(questionToAdd.bb_practice, function(practiceRelationShip) {
       var possiblePracticeParent = _.findWhere(this.linearizedPractices, { '@rid': practiceRelationShip, });
       if (possiblePracticeParent) {
-        var siblingQuestions = possiblePracticeParent.questions;
+        var siblingQuestions = possiblePracticeParent.questions || [];
         siblingQuestions.push(questionToAdd);
+        possiblePracticeParent.questions = siblingQuestions;
         return siblingQuestions;
       }
     }.bind(this));
@@ -185,8 +218,9 @@ MethodologyModelDeltaBuilderController.prototype.addQuestions = function() {
 MethodologyModelDeltaBuilderController.prototype.linearizePractices = function() {
   this.linearizedPractices = [];
   _.each(this.questionnaire, function(discipline) {
-    _.extend(this.linearizedPractices, discipline.practices);
+    this.linearizedPractices.push(discipline.practices);
   }.bind(this));
+  this.linearizedPractices = _.flatten(this.linearizedPractices);
 };
 
 module.exports = MethodologyModelDeltaBuilderController;
@@ -233,22 +267,23 @@ MethodologyModelVersion.prototype.prepareMethodologyModelVersionBuilder = functi
 
 MethodologyModelVersion.prototype.getPromiseToLoad = function() {
   if (this.id && !this.questionnaire) {
-    return [this.fetchAllDataCommingFromServer(),];
+    return [this.fetchAllDataComingFromServer(),];
   } else if (this.questionnaire && this.id) {
-    return [this.fetchMethodologyModelDelta(), this.fetchQuestionnaire(),];
+    return [this.fetchMethodologyModelDelta(),];
   }
 };
 
-MethodologyModelVersion.prototype.fetchAllDataCommingFromServer = function() {
+MethodologyModelVersion.prototype.fetchAllDataComingFromServer = function() {
   return new Promise(function(fulfill, reject) {
     if (this.id && !this.methodologyModelDelta && !this.questionnaire) {
       dbInstance
         .performGet('gps.methodology_model_version?id=' + this.id + '&loadAllDataForQuestionnaireVersioning=true')
         .then(function(serverResponse) {
-          this.setAllDataCommingFromServerResponse(serverResponse);
+          this.setAllDataComingFromServerResponse(serverResponse);
           fulfill({
             methodologyModelDelta: this.methodologyModelDelta,
             questionnaire: this.questionnaire,
+            versionDeltaModel: this.versionDeltaModel,
           });
         }.bind(this))
         .catch(function(error) {
@@ -263,11 +298,10 @@ MethodologyModelVersion.prototype.fetchAllDataCommingFromServer = function() {
   }.bind(this));
 };
 
-MethodologyModelVersion.prototype.setAllDataCommingFromServerResponse = function(serverResponse) {
-  var methodologyModelDelta = serverResponse.data.methodologyModelVersionDelta;
-  this.methodologyModelDelta = methodologyModelDelta;
-  var methodologyModelQuestionnaire = serverResponse.data.methodologyModelWithQestionnaire;
-  this.questionnaire = methodologyModelQuestionnaire.disciplines;
+MethodologyModelVersion.prototype.setAllDataComingFromServerResponse = function(serverResponse) {
+  this.methodologyModelDelta = serverResponse.data.methodologyModelVersionDelta;
+  this.questionnaire = serverResponse.data.methodologyModelWithQuestionnaire.disciplines;
+  this.versionDeltaModel = serverResponse.data.versionDeltaModel;
 },
 
 MethodologyModelVersion.prototype.fetchMethodologyModelDelta = function() {
@@ -292,40 +326,16 @@ MethodologyModelVersion.prototype.setMethodologyModelDeltaFromServerResponse = f
   this.methodologyModelDelta = methodologyModelDelta;
 };
 
-MethodologyModelVersion.prototype.fetchQuestionnaire = function() {
-  return new Promise(function(fulfill, reject) {
-    if (this.methodologyModelId && !this.questionnaire) {
-      dbInstance.performGet('gps.discipline?methodologyModelId=' + this.methodologyModelId + '&questionnaireLoad=true')
-        .then(function(serverResponse) {
-          this.setQuestionnaireFromServerResponse(serverResponse);
-          fulfill(this.questionnaire);
-        }.bind(this))
-        .catch(function(error) {
-          console.log(error);
-          reject(error);
-        });
-      return;
-    }
-    fulfill(this.questionnaire);
-  }.bind(this));
-};
-
-MethodologyModelVersion.prototype.setQuestionnaireFromServerResponse = function(serverResponse) {
-  var methodologyModel = serverResponse.data;
-  this.questionnaire = methodologyModel.disciplines;
-};
-
-MethodologyModelVersion.prototype.getElementsForAddDeltaProcess = function() {
-  var addDelta = this.methodologyModelDelta.add;
-};
-
 MethodologyModelVersion.prototype.build = function(options) {
   options = options || {};
+  var versionedQuestionnaire;
   return new Promise(function(fulfill, reject) {
     this.prepareMethodologyModelVersionBuilder()
       .then(function(versionModel) {
-        var versionedQuestionnaire = methodologyModelDeltaBuilderController
-          .buildMethodologyModelFromDeltaVersion(_.clone(versionModel.questionnaire), versionModel.methodologyModelDelta);
+        this.baseQuestionnaire = this.applyBaseChanges(versionModel);
+        versionedQuestionnaire = this.applyVersionChanges(this.baseQuestionnaire,
+          versionModel.methodologyModelDelta);
+
         this.versionedQuestionnaire = versionedQuestionnaire;
         var objectForFulfillment = _.clone(this);
         this.cleanBuild(options);
@@ -333,12 +343,26 @@ MethodologyModelVersion.prototype.build = function(options) {
           questionnaire: objectForFulfillment.questionnaire,
           versionedQuestionnaire: objectForFulfillment.versionedQuestionnaire,
           methodologyModelDelta: objectForFulfillment.methodologyModelDelta,
+          baseQuetionnaire: objectForFulfillment.baseQuestionnaire,
+          versionDeltaModel: objectForFulfillment.versionDeltaModel,
         });
       }.bind(this))
       .catch(function(error) {
         reject(error);
       });
   }.bind(this));
+};
+
+MethodologyModelVersion.prototype.applyBaseChanges = function(versionModel) {
+  var baseQuestionnaireCloned = _.clone(versionModel.questionnaire);
+  var baseQuestionnaireForVersion = this.applyVersionChanges(baseQuestionnaireCloned, versionModel.methodologyModelDelta.base || {});
+
+  return baseQuestionnaireForVersion || baseQuestionnaireCloned;
+};
+
+MethodologyModelVersion.prototype.applyVersionChanges = function(baseQuestionnaire, deltas) {
+  return methodologyModelDeltaBuilderController
+    .buildMethodologyModelFromDeltaVersion(baseQuestionnaire, deltas);
 };
 
 MethodologyModelVersion.prototype.cleanBuild = function(options) {
